@@ -24,9 +24,16 @@ def parse_pdf():
     pdf_path = 'pdf/{}.pdf'.format(datetime.date.today())
     reader = pdfplumber.open(pdf_path)
     page = sanitize(reader.pages[0].extract_text())
-    table = [chunk(row.strip().split(' ')) for row in page.split('County Number ')[-1].split('\n') if valid(row)]
+    table = [parse_row(row) for row in page.split('County Number ')[-1].split('\n') if valid(row)]
 
     return flatten_and_sort(table)
+
+def parse_row(row):
+    parsed_row = []
+    for flat_row in chunk(row.strip().split(' ')):
+        parsed_row.append([value.replace('*', '') for value in flat_row])
+
+    return parsed_row
 
 def write_table_to_csv(table):
     with open('cases.csv', 'a', newline='') as csvfile:
@@ -57,7 +64,8 @@ def valid(row):
             return False
 
         for entry in chunk(row.strip().split(' ')):
-            if str(int(entry[1])) != entry[1]:
+            value = entry[1].replace('*', '')
+            if str(int(value)) != value:
                 return False
 
         return True
